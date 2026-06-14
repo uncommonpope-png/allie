@@ -1,0 +1,21 @@
+{
+  "name": "allie",
+  "version": "1.0.0",
+  "description": "All-in-one AI brand management agent — scheduling, content, monitoring, engagement, fact-checking, competitive intelligence",
+  "author": "Brain in a Box",
+  "price": 199,
+  "commands": 30,
+  "modules": 10,
+  "capabilities": [
+    "cadence",
+    "calendar",
+    "loops",
+    "suggest",
+    "engage",
+    "monitor",
+    "bridge",
+    "factcheck",
+    "employer",
+    "compete"
+  ]
+}

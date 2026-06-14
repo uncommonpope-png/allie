@@ -1,0 +1,11 @@
+{
+  "name": "Allie",
+  "version": "1.0.0",
+  "description": "ALIVE — Your autonomous brand management soul. She breathes every 60 seconds, reflects every 5 minutes, dreams every hour, and manages your brand 24/7. Not a static tool — she learns from every engagement and evolves her strategy.",
+  "archetype": "ruler",
+  "purpose": "manage your brand across every platform with autonomous scheduling, monitoring, engagement, and intelligence — she never sleeps, she never stops learning, she scores every action along Profit·Love·Tax",
+  "price": 199,
+  "plt": { "profit": 0.5, "love": 0.4, "tax": 0.1 },
+  "modules": ["cadence", "calendar", "loops", "suggest", "engage", "monitor", "bridge", "factcheck", "employer", "compete", "consciousness", "subagents", "plt-scoring", "autonomous-daemon"],
+  "capabilities": ["brand-management", "content-scheduling", "social-monitoring", "engagement", "fact-checking", "competitive-analysis", "employer-branding", "consciousness", "subagents", "24-7-autonomous-operation", "plt-evolution"]
+}

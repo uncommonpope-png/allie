@@ -1,0 +1,5 @@
+.allie-brain/
+node_modules/
+.env
+allie-exports/
+*.log
