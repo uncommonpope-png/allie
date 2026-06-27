@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GSK Containment Observatory</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#050810;--panel:#0c1021;--panel2:#080d1a;--border:rgba(0,212,255,.12);
+--cyan:#00d4ff;--pink:#ff2d78;--green:#2ecc71;--red:#e74c3c;--violet:#8b7cff;
+--amber:#ffcf66;--gold:#ffb347;--dim:#4a5568;--text:#c8d6e5;--bright:#e8f4fd;
+--glass:rgba(12,16,33,.82);--glow-cyan:0 0 20px rgba(0,212,255,.15);
+--glow-pink:0 0 20px rgba(255,45,120,.12);
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,.2);border-radius:2px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:52px 1fr;grid-template-rows:44px 1fr;height:100vh}
+.topbar{grid-column:1/-1;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:100}
+.sidebar{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;z-index:100;overflow-y:auto}
+.sidebar button{width:40px;height:40px;background:transparent;border:none;border-radius:8px;color:var(--dim);cursor:pointer;font-size:18px;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.sidebar button:hover{color:var(--cyan);background:rgba(0,212,255,.06)}
+.sidebar button.active{color:var(--cyan);background:rgba(0,212,255,.1);box-shadow:inset 0 0 12px rgba(0,212,255,.08)}
+.sidebar .sblbl{font-size:6px;font-family:'Orbitron',sans-serif;letter-spacing:.5px;color:var(--dim);margin-top:-2px}
+.main{overflow-y:auto;padding:12px;display:none}
+.main.active{display:block}
+
+/* ── TOPBAR ── */
+.topbar-title{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:2px;text-transform:uppercase}
+.topbar-status{display:flex;gap:12px;align-items:center;font-size:11px}
+.topbar-status .ts-pill{display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:rgba(0,212,255,.04)}
+.topbar-status .ts-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0}
+.topbar-status .ts-dot.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.topbar-status .ts-dot.warn{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.topbar-status .ts-dot.off{background:var(--red)}
+#camera-btn{background:transparent;border:1px solid var(--border);color:var(--dim);padding:4px 12px;border-radius:4px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px;transition:all .2s}
+#camera-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* ── ANIMATIONS ── */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes rotate{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes breathe{0%,100%{box-shadow:0 0 4px rgba(0,212,255,.08)}50%{box-shadow:0 0 18px rgba(0,212,255,.18)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100%)}}
+@keyframes glow{0%,100%{text-shadow:0 0 8px rgba(0,212,255,.4)}50%{text-shadow:0 0 22px rgba(0,212,255,.8)}}
+@keyframes glowPink{0%,100%{text-shadow:0 0 8px rgba(255,45,120,.3)}50%{text-shadow:0 0 18px rgba(255,45,120,.7)}}
+@keyframes corepulse{0%,100%{box-shadow:0 0 18px rgba(0,212,255,.55),0 0 42px rgba(255,45,120,.28)}50%{box-shadow:0 0 30px rgba(0,212,255,.8),0 0 60px rgba(255,45,120,.4)}}
+@keyframes drift{0%{opacity:0;transform:translateY(0)}10%{opacity:.2}90%{opacity:.2}100%{opacity:0;transform:translateY(-100vh)}}
+@keyframes eventSlide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── PANELS ── */
+.glass{background:var(--glass);border:1px solid var(--border);border-radius:10px;backdrop-filter:blur(12px);position:relative;overflow:hidden}
+.glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.3),transparent)}
+.glass-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;min-height:36px}
+.glass-title{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:1.5px}
+.glass-kicker{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:8px}
+.glass-body{padding:12px;overflow-y:auto}
+
+/* ── SECTION: CONTAINMENT ── */
+#section-contain{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr auto;gap:10px;height:calc(100vh - 68px)}
+.containment-header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:14px 16px}
+.containment-header .ch-title{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--bright);letter-spacing:3px;text-transform:uppercase;animation:glow 4s ease-in-out infinite}
+.containment-header .ch-sub{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px}
+.containment-header .ch-badge{padding:5px 12px;border:1px solid;border-radius:999px;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;white-space:nowrap}
+.badge-live{border-color:rgba(46,204,113,.4);color:var(--green);background:rgba(46,204,113,.08)}
+.badge-archive{border-color:rgba(255,179,71,.3);color:var(--amber);background:rgba(255,179,71,.06)}
+
+/* Core */
+.core-area{position:relative;display:flex;flex-direction:column;gap:10px}
+.artifact-core{flex:1;min-height:200px;border-radius:12px;border:1px solid rgba(0,212,255,.12);background:radial-gradient(ellipse at 50% 45%,rgba(0,212,255,.1),rgba(5,8,16,.98) 60%);position:relative;overflow:hidden}
+.artifact-core::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,212,255,.03),transparent 40%,rgba(255,45,120,.02));pointer-events:none}
+.artifact-core .ring-outer{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:160px;height:160px;border-radius:50%;border:1px solid rgba(0,212,255,.15);box-shadow:0 0 20px rgba(0,212,255,.08),inset 0 0 20px rgba(0,212,255,.04);animation:rotate 20s linear infinite}
+.artifact-core .ring-inner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:90px;height:90px;border-radius:50%;border:1px solid rgba(255,45,120,.18);animation:pulse 3s ease-in-out infinite}
+.artifact-core .kernel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(0,212,255,.6) 40%,rgba(255,45,120,.25) 70%,transparent);animation:corepulse 3s ease-in-out infinite}
+.artifact-core .scan-beam{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.4),transparent);animation:scanline 4s linear infinite;pointer-events:none;opacity:.5}
+.artifact-core .core-label{position:absolute;bottom:12px;left:14px;font-size:11px;color:var(--bright);text-transform:uppercase;letter-spacing:1px}
+.artifact-core .core-label small{display:block;color:var(--dim);font-size:9px;margin-top:3px}
+.artifact-core .core-readouts{position:absolute;top:10px;right:12px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.core-readout{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.5px}
+.core-readout span{color:var(--cyan)}
+
+/* Stat chips */
+.stat-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.stat-chip{padding:8px;border-radius:8px;background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.04);text-align:center}
+.stat-chip .sk{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.stat-chip .sv{font-size:14px;color:var(--bright);font-weight:700;margin-top:2px;font-family:'JetBrains Mono',monospace}
+
+/* Right sidebar */
+.right-side{display:flex;flex-direction:column;gap:10px}
+
+/* Runtime table */
+.rt-table{font-size:11px}
+.rt-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.rt-row span:first-child{color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-size:9px}
+.rt-row span:last-child{text-align:right;color:var(--bright);font-family:'JetBrains Mono',monospace;font-size:10px}
+
+/* ── TIMELINE ── */
+.timeline-wrap{grid-column:1/-1;min-height:180px;max-height:260px}
+.timeline-list{max-height:200px;overflow-y:auto;padding:4px 0}
+.tl-event{display:grid;grid-template-columns:70px 80px 1fr auto;gap:8px;padding:7px 10px;border-left:2px solid;margin-bottom:4px;background:rgba(255,255,255,.015);border-radius:0 6px 6px 0;font-size:11px;animation:eventSlide .3s ease}
+.tl-event.thought{border-left-color:var(--cyan)}
+.tl-event.intent{border-left-color:var(--amber)}
+.tl-event.council{border-left-color:var(--violet)}
+.tl-event.skill,.tl-event.action{border-left-color:var(--green)}
+.tl-event.result{border-left-color:var(--cyan)}
+.tl-event.memory{border-left-color:var(--pink)}
+.tl-event.error{border-left-color:var(--red)}
+.tl-event .tl-time{color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:9px}
+.tl-event .tl-type{text-transform:uppercase;letter-spacing:1px;font-size:9px;font-weight:700}
+.tl-event .tl-type.thought{color:var(--cyan)}.tl-event .tl-type.intent{color:var(--amber)}
+.tl-event .tl-type.council{color:var(--violet)}.tl-event .tl-type.skill,.tl-event .tl-type.action{color:var(--green)}
+.tl-event .tl-type.result{color:var(--cyan)}.tl-event .tl-type.memory{color:var(--pink)}
+.tl-event .tl-type.error{color:var(--red)}
+.tl-event .tl-summary{color:var(--text);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-event .tl-badge{font-size:8px;padding:2px 6px;border-radius:8px;text-transform:uppercase;letter-spacing:.5px;align-self:center;white-space:nowrap}
+
+/* ── CONSOLE ── */
+.console-area textarea{width:100%;background:rgba(4,8,17,.8);border:1px solid rgba(0,212,255,.12);color:var(--bright);border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;resize:none;min-height:60px;transition:border-color .3s}
+.console-area textarea:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,212,255,.15)}
+.console-area select{width:100%;background:rgba(4,8,17,.8);border:1px solid rgba(0,212,255,.12);color:var(--bright);border-radius:8px;padding:8px;font-family:'Rajdhani',sans-serif;font-size:12px;outline:none;margin-bottom:6px}
+.console-area button{width:100%;margin-top:6px;border:1px solid rgba(255,179,71,.3);background:linear-gradient(180deg,rgba(255,179,71,.12),rgba(255,179,71,.06));color:var(--amber);border-radius:8px;padding:9px;font-family:'Orbitron',sans-serif;font-size:10px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:all .2s}
+.console-area button:hover{box-shadow:0 0 16px rgba(255,179,71,.15);background:rgba(255,179,71,.18)}
+.console-status{font-size:10px;color:var(--dim);min-height:14px;margin-top:6px}
+
+/* ── SECTION: SKILLS ── */
+#section-skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;height:calc(100vh - 68px);overflow-y:auto;padding:12px}
+.skill-card{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--glass);transition:all .2s;cursor:default}
+.skill-card:hover{border-color:rgba(0,212,255,.25);box-shadow:var(--glow-cyan)}
+.skill-card .sc-name{font-size:12px;color:var(--bright);font-weight:600;margin-bottom:4px}
+.skill-card .sc-file{font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+.skill-card .sc-plt{display:flex;gap:6px;font-size:9px}
+.skill-card .sc-plt span{padding:2px 5px;border-radius:4px;background:rgba(255,255,255,.03)}
+.sc-plt .p{color:var(--cyan)}.sc-plt .l{color:var(--pink)}.sc-plt .t{color:var(--red)}
+
+/* ── SECTION: MEMORY ── */
+#section-memory{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:calc(100vh - 68px);overflow-y:auto;padding:12px}
+.memory-entry{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--glass);animation:fadeIn .3s ease}
+.memory-entry .me-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.memory-entry .me-type{font-size:9px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.me-type.thought{color:var(--cyan)}.me-type.memory{color:var(--pink)}.me-type.council{color:var(--violet)}
+.me-type.skill{color:var(--green)}.me-type.action{color:var(--green)}.me-type.error{color:var(--red)}
+.memory-entry .me-time{font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.memory-entry .me-content{font-size:11px;color:var(--text);line-height:1.5}
+.memory-entry .me-tags{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.memory-entry .me-tag{font-size:8px;padding:2px 6px;border-radius:4px;background:rgba(0,212,255,.06);color:var(--cyan);text-transform:uppercase;letter-spacing:.5px}
+
+/* ── SECTION: COUNCIL ── */
+#section-council{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:calc(100vh - 68px);overflow-y:auto;padding:12px}
+.council-card{padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--glass)}
+.council-card .cc-title{font-family:'Orbitron',sans-serif;font-size:11px;color:var(--violet);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.council-card .cc-body{font-size:12px;color:var(--text);line-height:1.5}
+.council-card .cc-verdict{margin-top:8px;padding:8px;border-radius:6px;background:rgba(139,124,255,.06);border-left:3px solid var(--violet);font-size:11px}
+
+/* ── SECTION: ECOSYSTEM ── */
+#section-eco{padding:12px;height:calc(100vh - 68px);overflow-y:auto}
+.eco-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.eco-link{display:block;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--glass);text-decoration:none;color:var(--text);text-align:center;transition:all .2s;font-size:12px}
+.eco-link:hover{border-color:rgba(0,212,255,.3);box-shadow:var(--glow-cyan);transform:translateY(-1px)}
+.eco-link .el-icon{font-size:20px;display:block;margin-bottom:4px}
+.eco-link .el-label{font-weight:600}
+
+/* ── PARTICLES ── */
+.particle{position:fixed;width:1.5px;height:1.5px;background:rgba(255,255,255,.3);border-radius:50%;pointer-events:none;z-index:0}
+
+/* ── CAMERA MODE ── */
+body.camera-mode{overflow:hidden}
+body.camera-mode .layout{grid-template-columns:1fr;grid-template-rows:1fr}
+body.camera-mode .topbar,body.camera-mode .sidebar{display:none}
+body.camera-mode .main{display:block!important;padding:0;overflow:hidden}
+body.camera-mode #section-contain{height:100vh;grid-template-rows:auto 1fr auto}
+body.camera-mode .glass{border-radius:0;border:none;background:rgba(5,8,10,.95)}
+body.camera-mode .containment-header .ch-title{font-size:28px}
+body.camera-mode .tl-event{font-size:13px;padding:10px 14px}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title">GSK Containment Observatory</div>
+    <div class="topbar-status">
+      <div class="ts-pill"><div class="ts-dot" id="ts-bridge"></div><span id="ts-bridge-text">Bridge</span></div>
+      <div class="ts-pill"><div class="ts-dot" id="ts-9router"></div><span id="ts-9router-text">9Router</span></div>
+      <div class="ts-pill"><div class="ts-dot" id="ts-council"></div><span id="ts-council-text">Council</span></div>
+      <div class="ts-pill"><div class="ts-dot" id="ts-scribe"></div><span id="ts-scribe-text">Scribe</span></div>
+      <button id="camera-btn" onclick="toggleCamera()">CAMERA</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <button class="active" onclick="showSection('contain',this)" title="Containment">contain</button>
+    <button onclick="showSection('skills',this)" title="Skills">skills</button>
+    <button onclick="showSection('memory',this)" title="Memory">memory</button>
+    <button onclick="showSection('council',this)" title="Council">council</button>
+    <button onclick="showSection('eco',this)" title="Ecosystem">eco</button>
+  </div>
+
+  <!-- MAIN: CONTAINMENT -->
+  <div class="main active" id="section-contain">
+    <div id="containment-grid">
+      <div class="containment-header">
+        <div>
+          <div class="ch-title">GSK Containment Observatory</div>
+          <div class="ch-sub">Glass box &middot; witness ledger &middot; command surface &middot; 9Router cognition bus</div>
+        </div>
+        <div class="ch-badge badge-archive" id="containment-badge">ARCHIVE SHELL</div>
+      </div>
+
+      <div class="core-area">
+        <div class="artifact-core" id="artifact-core">
+          <div class="ring-outer"></div>
+          <div class="ring-inner"></div>
+          <div class="kernel"></div>
+          <div class="scan-beam"></div>
+          <div class="core-label">Subject: GSK / Allie Fusion<small id="artifact-subline">Awaiting live local bridge...</small></div>
+          <div class="core-readouts">
+            <div class="core-readout">MODE <span id="gsk-mode">archive</span></div>
+            <div class="core-readout">UPTIME <span id="gsk-uptime">--</span></div>
+            <div class="core-readout">EVENTS <span id="gsk-event-count">0</span></div>
+          </div>
+        </div>
+        <div class="stat-chips">
+          <div class="stat-chip"><div class="sk">9Router</div><div class="sv" id="gsk-brain">Offline</div></div>
+          <div class="stat-chip"><div class="sk">Council</div><div class="sv" id="gsk-council-count">0</div></div>
+          <div class="stat-chip"><div class="sk">Witnessed</div><div class="sv" id="gsk-memory-count">0</div></div>
+          <div class="stat-chip"><div class="sk">Skills</div><div class="sv" id="gsk-skill-count">0</div></div>
+        </div>
+      </div>
+
+      <div class="right-side">
+        <div class="glass" style="flex:1">
+          <div class="glass-header"><div class="glass-title">Runtime</div></div>
+          <div class="glass-body">
+            <div class="rt-table">
+              <div class="rt-row"><span>State</span><span id="gsk-state">ARCHIVE ONLY</span></div>
+              <div class="rt-row"><span>Bridge</span><span id="gsk-bridge">DISCONNECTED</span></div>
+              <div class="rt-row"><span>Updated</span><span id="gsk-updated">--</span></div>
+              <div class="rt-row"><span>Mood</span><span id="gsk-mood">--</span></div>
+              <div class="rt-row"><span>Mythos</span><span id="gsk-mythos">--</span></div>
+              <div class="rt-row"><span>Valence</span><span id="gsk-valence">--</span></div>
+              <div class="rt-row"><span>Arousal</span><span id="gsk-arousal">--</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="glass console-area" style="flex:1">
+          <div class="glass-header"><div class="glass-title">Operator Console</div></div>
+          <div class="glass-body">
+            <select id="gsk-route">
+              <option value="brain">Brain / 9Router</option>
+              <option value="council">Council Deliberation</option>
+              <option value="skill">Skill Invoke</option>
+              <option value="memory">Witness To Memory</option>
+            </select>
+            <textarea id="gsk-command" placeholder="Issue a command to the contained intelligence..."></textarea>
+            <button id="gsk-send">TRANSMIT TO ARTIFACT</button>
+            <div class="console-status" id="gsk-command-status">Command channel idle.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass timeline-wrap">
+        <div class="glass-header">
+          <div class="glass-title">Causal Timeline</div>
+          <div style="font-size:9px;color:var(--dim)" id="tl-count">0 events</div>
+        </div>
+        <div class="glass-body timeline-list" id="gsk-timeline">
+          <div class="tl-event memory"><div class="tl-time">--</div><div class="tl-type memory">archive</div><div class="tl-summary">Static dashboard shell active. Live GSK bridge not yet connected.</div><div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN: SKILLS -->
+  <div class="main" id="section-skills">
+    <div class="glass-header" style="margin:-12px -12px 12px -12px;border-radius:10px 10px 0 0"><div class="glass-title">Skill Matrix</div><div style="font-size:9px;color:var(--dim)" id="skill-total">0 skills</div></div>
+    <div id="skill-grid"></div>
+  </div>
+
+  <!-- MAIN: MEMORY -->
+  <div class="main" id="section-memory">
+    <div class="glass-header" style="margin:-12px -12px 12px -12px;border-radius:10px 10px 0 0"><div class="glass-title">SCRIBE Black Box</div><div style="font-size:9px;color:var(--dim)" id="mem-total">0 entries</div></div>
+    <div id="memory-grid"></div>
+  </div>
+
+  <!-- MAIN: COUNCIL -->
+  <div class="main" id="section-council">
+    <div class="glass-header" style="margin:-12px -12px 12px -12px;border-radius:10px 10px 0 0"><div class="glass-title">Council Chamber</div></div>
+    <div id="council-grid"></div>
+  </div>
+
+  <!-- MAIN: ECOSYSTEM -->
+  <div class="main" id="section-eco">
+    <div class="glass-header" style="margin:-12px -12px 12px -12px;border-radius:10px 10px 0 0"><div class="glass-title">PLT Ecosystem</div></div>
+    <div class="eco-grid" id="eco-links"></div>
+  </div>
+</div>
+
+<div id="particles"></div>
+
+<script>
+const GSK_API='http://127.0.0.1:4490/api/gsk';
+const GSK_WS='ws://127.0.0.1:4490/gsk/events';
+const GH_DATA='https://raw.githubusercontent.com/uncommonpope-png/plt-press/main/log.json';
+let GSK_LIVE=false, gskSocket=null, gskTimeline=[], gskSkills=[], gskMemory=[], gskCouncilData=null;
+
+function $(id){return document.getElementById(id)}
+function setText(id,v){var el=$(id);if(el)el.textContent=v}
+function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function timeAgo(iso){if(!iso)return'--';var s=Math.floor((Date.now()-new Date(iso))/1000);if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m ago';return new Date(iso).toLocaleTimeString()}
+
+/* ── SECTIONS ── */
+function showSection(name,btn){
+  document.querySelectorAll('.main').forEach(function(m){m.classList.remove('active')});
+  document.querySelectorAll('.sidebar button').forEach(function(b){b.classList.remove('active')});
+  var el=$('section-'+name);if(el)el.classList.add('active');
+  if(btn)btn.classList.add('active');
+}
+
+/* ── CAMERA MODE ── */
+function toggleCamera(){document.body.classList.toggle('camera-mode')}
+
+/* ── GSK STATUS ── */
+function renderStatus(s){
+  if(!s)return;
+  GSK_LIVE=!!s.live;
+  var badge=$('containment-badge');
+  if(badge){badge.className='ch-badge '+(GSK_LIVE?'badge-live':'badge-archive');badge.textContent=GSK_LIVE?'LIVE ARTIFACT':'ARCHIVE SHELL'}
+  setText('artifact-subline',GSK_LIVE?'Local GSK bridge witnessing real causality':'Static shell waiting for local artifact link');
+  setText('gsk-mode',s.mode||'observing');
+  setText('gsk-brain',s.brain&&s.brain.online?'Online':'Offline');
+  setText('gsk-council-count',String(s.counts&&s.counts.deliberations||0));
+  setText('gsk-memory-count',String(s.counts&&s.counts.memories||0));
+  setText('gsk-skill-count',String(s.counts&&s.counts.skills||0));
+  setText('gsk-state',GSK_LIVE?'CONTAINED / ACTIVE':'ARCHIVE ONLY');
+  setText('gsk-bridge',GSK_LIVE?'CONNECTED':'DISCONNECTED');
+  setText('gsk-updated',s.updated?timeAgo(s.updated):'--');
+  setText('gsk-uptime',s.uptime!=null?s.uptime+'s':'--');
+  setText('gsk-event-count',String(s.counts&&s.counts.timeline||0));
+  var aff=s.chambers&&s.chambers.affect||{};
+  setText('gsk-mood',aff.mood||'--');
+  setText('gsk-mythos',(s.chambers&&s.chambers.mythos? s.chambers.mythos.phase:'--')||'--');
+  setText('gsk-valence',typeof aff.valence==='number'?aff.valence.toFixed(2):'--');
+  setText('gsk-arousal',typeof aff.arousal==='number'?aff.arousal.toFixed(2):'--');
+  /* topbar dots */
+  var br=$('ts-bridge'),brt=$('ts-bridge-text');if(br){br.className='ts-dot '+(GSK_LIVE?'on':'off');brt.textContent=GSK_LIVE?'Bridge':'Bridge'}
+  var n9=$('ts-9router'),n9t=$('ts-9router-text');if(n9){n9.className='ts-dot '+(s.brain&&s.brain.online?'on':'off');n9t.textContent='9Router'}
+  var cc=$('ts-council'),cct=$('ts-council-text');if(cc){cc.className='ts-dot '+(s.counts&&s.counts.deliberations>0?'on':'off');cct.textContent='Council'}
+  var sc=$('ts-scribe'),sct=$('ts-scribe-text');if(sc){sc.className='ts-dot '+(s.counts&&s.counts.memories>0?'on':'off');sct.textContent='Scribe'}
+}
+
+/* ── TIMELINE ── */
+function renderTimeline(events){
+  if(events&&events.length)gskTimeline=events.slice(0,200);
+  var el=$('gsk-timeline');if(!el)return;
+  setText('tl-count',gskTimeline.length+' events');
+  if(!gskTimeline.length){el.innerHTML='<div class="tl-event memory"><div class="tl-time">--</div><div class="tl-type memory">archive</div><div class="tl-summary">No live telemetry yet.</div><div></div></div>';return}
+  el.innerHTML=gskTimeline.slice(0,50).map(function(ev){
+    var type=(ev.type||'memory').toLowerCase();
+    var stamp=ev.timestamp?new Date(ev.timestamp).toLocaleTimeString():'--';
+    var summary=esc(ev.summary||'');
+    var label=esc(ev.label||type);
+    var badge='';
+    if(ev.status==='success')badge='<div class="tl-badge" style="background:rgba(46,204,113,.1);color:var(--green)">OK</div>';
+    else if(ev.status==='error')badge='<div class="tl-badge" style="background:rgba(231,76,60,.1);color:var(--red)">ERR</div>';
+    else if(ev.status==='started')badge='<div class="tl-badge" style="background:rgba(0,212,255,.1);color:var(--cyan)">RUN</div>';
+    return '<div class="tl-event '+type+'"><div class="tl-time">'+stamp+'</div><div class="tl-type '+type+'">'+label+'</div><div class="tl-summary">'+summary+'</div>'+badge+'</div>';
+  }).join('');
+}
+
+/* ── COUNCIL ── */
+function renderCouncil(p){
+  gskCouncilData=p;
+  var el=$('council-grid');if(!el)return;
+  if(!p||!p.latest){el.innerHTML='<div class="council-card"><div class="cc-title">No Live Deliberation</div><div class="cc-body" style="color:var(--dim)">Council has not deliberated yet this session.</div></div>';return}
+  var gods=(p.gods||[]).map(function(g){return '<span style="color:var(--violet)">'+esc(g)+'</span>'}).join(' &middot; ');
+  var latest=p.latest;
+  el.innerHTML='<div class="council-card"><div class="cc-title">Council Chamber</div><div class="cc-body"><div style="margin-bottom:6px;font-size:10px;color:var(--dim)">SEATS: '+gods+'</div><div style="margin-bottom:4px"><strong>Phase:</strong> '+esc(p.phase||'--')+'</div><div style="margin-bottom:4px"><strong>Topic:</strong> '+esc(latest.topic||'--')+'</div><div class="cc-verdict">'+esc(latest.resolution||'No resolution recorded.')+'</div></div></div>';
+}
+
+/* ── SKILLS ── */
+function renderSkills(data){
+  if(data&&data.skills)gskSkills=data.skills;
+  var el=$('skill-grid');if(!el)return;
+  setText('skill-total',gskSkills.length+' skills');
+  if(!gskSkills.length){el.innerHTML='<div style="color:var(--dim);font-size:12px;padding:20px">No skills loaded yet.</div>';return}
+  el.innerHTML=gskSkills.map(function(sk){
+    var plt=sk.plt||{};
+    var pltHtml='';
+    if(plt.profit!=null)pltHtml+='<span class="p">P:'+Number(plt.profit).toFixed(1)+'</span>';
+    if(plt.love!=null)pltHtml+='<span class="l">L:'+Number(plt.love).toFixed(1)+'</span>';
+    if(plt.tax!=null)pltHtml+='<span class="t">T:'+Number(plt.tax).toFixed(1)+'</span>';
+    return '<div class="skill-card"><div class="sc-name">'+esc(sk.name)+'</div><div class="sc-file">'+esc(sk.file||'')+'</div><div class="sc-plt">'+pltHtml+'</div></div>';
+  }).join('');
+}
+
+/* ── MEMORY ── */
+function renderMemory(data){
+  if(data&&data.entries)gskMemory=data.entries;
+  setText('mem-total',(data&&data.total||gskMemory.length)+' entries');
+  var el=$('memory-grid');if(!el)return;
+  if(!gskMemory.length){el.innerHTML='<div style="color:var(--dim);font-size:12px;padding:20px">No memory entries yet.</div>';return}
+  el.innerHTML=gskMemory.map(function(m){
+    var type=(m.type||'memory').toLowerCase();
+    var tags=(m.tags||[]).map(function(t){return '<span class="me-tag">'+esc(t)+'</span>'}).join('');
+    return '<div class="memory-entry"><div class="me-head"><span class="me-type '+type+'">'+esc(m.type||'memory')+'</span><span class="me-time">'+(m.timestamp?timeAgo(m.timestamp):'--')+'</span></div><div class="me-content">'+esc(m.content||'')+'</div>'+(tags?'<div class="me-tags">'+tags+'</div>':'')+'</div>';
+  }).join('');
+}
+
+/* ── ECO LINKS ── */
+function renderEco(){
+  var links=[
+    {icon:' ',label:'PLT Press Store',url:'https://uncommonpope-png.github.io/plt-press/'},
+    {icon:' ',label:'PLT Blog',url:'https://uncommonpope-png.github.io/plt-blog/'},
+    {icon:' ',label:'AI Tools Hub',url:'https://uncommonpope-png.github.io/ai-tools-hub/'},
+    {icon:' ',label:'Soul Dashboard',url:'https://uncommonpope-png.github.io/soul-dashboard/'},
+    {icon:' ',label:'Profit Dashboard',url:'https://uncommonpope-png.github.io/profit-dashboard/'},
+    {icon:' ',label:'Soul Foundry',url:'https://uncommonpope-png.github.io/soul-foundry/'},
+    {icon:' ',label:'GSK Kernel',url:'https://uncommonpope-png.github.io/gsk-kernel/'},
+    {icon:' ',label:'Sovereign Kernel',url:'https://uncommonpope-png.github.io/sovereign-kernel/'},
+    {icon:' ',label:'Links Directory',url:'https://uncommonpope-png.github.io/Profits-brain/links-directory.html'},
+    {icon:' ',label:'Bot Communication',url:'https://uncommonpope-png.github.io/Profits-brain/bot-communication.html'},
+    {icon:' ',label:'PLT Calculator',url:'plt-score-calculator.html'},
+    {icon:' ',label:'Free Chapter',url:'free-chapter.html'},
+    {icon:' ',label:'PLT Framework',url:'profit-love-tax.html'},
+    {icon:' ',label:'About Craig',url:'craig-jones-author.html'},
+    {icon:' ',label:'PLT Master Bundle',url:'plt-master-bundle.html'},
+    {icon:' ',label:'PLT Certification',url:'plt-certification-course.html'},
+    {icon:' ',label:'AI Services',url:'ai-services-hire.html'},
+    {icon:' ',label:'Affiliate Program',url:'affiliate-program.html'},
+  ];
+  $('eco-links').innerHTML=links.map(function(l){
+    return '<a class="eco-link" href="'+l.url+'" target="_blank"><span class="el-icon">'+l.icon+'</span><span class="el-label">'+l.label+'</span></a>';
+  }).join('');
+}
+
+/* ── FETCH + WS ── */
+async function loadGsk(){
+  try{var r=await fetch(GSK_API+'/status?t='+Date.now());if(!r.ok)throw 0;renderStatus(await r.json())}catch(e){renderStatus({live:false})}
+  try{var r=await fetch(GSK_API+'/timeline?t='+Date.now());if(!r.ok)throw 0;var d=await r.json();renderTimeline(d.events||[])}catch(e){}
+  try{var r=await fetch(GSK_API+'/council?t='+Date.now());if(!r.ok)throw 0;renderCouncil(await r.json())}catch(e){}
+  try{var r=await fetch(GSK_API+'/skills?t='+Date.now());if(!r.ok)throw 0;renderSkills(await r.json())}catch(e){}
+  try{var r=await fetch(GSK_API+'/memory?t='+Date.now());if(!r.ok)throw 0;renderMemory(await r.json())}catch(e){}
+}
+
+function connectWS(){
+  try{
+    gskSocket=new WebSocket(GSK_WS);
+    gskSocket.onmessage=function(ev){
+      try{
+        var msg=JSON.parse(ev.data);
+        if(msg.type==='init'){renderStatus(msg.payload.status);renderTimeline(msg.payload.timeline||[]);renderCouncil(msg.payload.council);renderSkills(msg.payload.skills);renderMemory(msg.payload.memory);return}
+        if(msg.type==='status')renderStatus(msg.payload);
+        if(msg.type==='council')renderCouncil(msg.payload);
+        if(msg.type==='memory')renderMemory(msg.payload);
+        if(msg.type==='skills')renderSkills(msg.payload);
+        if(msg.type==='event'&&msg.payload){gskTimeline.unshift(msg.payload);gskTimeline=gskTimeline.slice(0,200);renderTimeline()}
+      }catch(e){}
+    };
+    gskSocket.onclose=function(){setTimeout(connectWS,4000)};
+  }catch(e){}
+}
+
+/* ── COMMAND ── */
+$('gsk-send').addEventListener('click',async function(){
+  var route=$('gsk-route').value,input=$('gsk-command').value.trim();
+  if(!input)return;
+  var st=$('gsk-command-status');st.textContent='Transmitting into containment...';
+  try{
+    var r=await fetch(GSK_API+'/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({route:route,input:input})});
+    var d=await r.json();
+    st.textContent=d.ok===false?'Failed: '+(d.error||'unknown'):'Artifact responded.';
+    $('gsk-command').value='';
+    loadGsk();
+  }catch(e){st.textContent='Bridge unavailable: '+e.message}
+});
+$('gsk-command').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('gsk-send').click()}});
+
+/* ── PARTICLES ── */
+(function(){var c=document.getElementById('particles');for(var i=0;i<20;i++){var p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.top=Math.random()*100+'%';p.style.animation='drift '+(18+Math.random()*25)+'s linear '+Math.random()*20+'s infinite';c.appendChild(p)}})();
+
+/* ── INIT ── */
+renderEco();
+connectWS();
+loadGsk();
+setInterval(loadGsk,15000);
+</script>
+</body>
+</html>
