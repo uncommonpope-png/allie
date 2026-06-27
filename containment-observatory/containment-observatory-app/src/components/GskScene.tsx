@@ -1,4 +1,4 @@
-import { useRef, useMemo, Suspense, useEffect } from 'react'
+import { useRef, useMemo, Suspense, useEffect, useState, useCallback } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
 import { EffectComposer, Bloom, ChromaticAberration, Noise, Scanline, Vignette } from '@react-three/postprocessing'
@@ -205,6 +205,11 @@ function SofaScene() {
   )
 }
 
+function SceneReady({ onReady }: { onReady: () => void }) {
+  useEffect(() => { onReady() }, [onReady])
+  return null
+}
+
 function SceneRouter() {
   const scene = useMoodStore((s) => s.scene)
   switch (scene) {
@@ -260,6 +265,12 @@ export function GskScene() {
   const setConnected = useGskStore((s) => s.setConnected)
   const setLastUpdate = useGskStore((s) => s.setLastUpdate)
   const preset = scenePresets[scene]
+  const [sceneReady, setSceneReady] = useState(false)
+  const markReady = useCallback(() => setSceneReady(true), [])
+
+  useEffect(() => {
+    setSceneReady(false)
+  }, [scene])
 
   useEffect(() => {
     let cancelled = false
@@ -302,18 +313,35 @@ export function GskScene() {
       >
         <SceneLighting scene={scene} />
 
-        <Suspense fallback={null}>
+        <Suspense fallback={
+          <mesh position={[0, 0, 0]}>
+            <boxGeometry args={[0.3, 0.3, 0.3]} />
+            <meshStandardMaterial color="#00d4ff" wireframe transparent opacity={0.5} />
+          </mesh>
+        }>
           <SceneRouter />
           <Environment showContainmentFrame={preset.showContainmentFrame} />
           <HologramSystem mood={mood} brainOnline={brainOnline} sceneName={scene} />
           <MemoizedMatrixRain />
           <MemoizedFloatingParticles />
+          <SceneReady onReady={markReady} />
         </Suspense>
 
         <EffectComposer>
           <PostProcessingEffects scene={scene} />
         </EffectComposer>
       </Canvas>
+
+      {!sceneReady && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-[10px] font-mono tracking-widest" style={{ color: '#64748b' }}>
+              LOADING SCENE...
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center pointer-events-none">
         <div className="flex gap-2 pointer-events-auto">

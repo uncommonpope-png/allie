@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  base: '/allie/',
   plugins: [react(), tailwindcss()],
   server: {
     port: 4491,
