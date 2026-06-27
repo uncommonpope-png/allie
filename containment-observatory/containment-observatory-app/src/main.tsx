@@ -3,39 +3,42 @@ import { createRoot } from 'react-dom/client'
 import { useGLTF } from '@react-three/drei'
 import './index.css'
 import App from './App'
+import { AppErrorBoundary } from './components/AppErrorBoundary'
+
+const modelUrl = (fileName: string) => `${import.meta.env.BASE_URL}assets/models/${fileName}`
 
 const deskModels = [
-  '/assets/models/alien-blobby.glb',
-  '/assets/models/desk-lamp.glb',
-  '/assets/models/retro-screens.glb',
-  '/assets/models/server-rack.glb',
-  '/assets/models/data-center-rack.glb',
-  '/assets/models/neon-bar-sign.glb',
-  '/assets/models/hologram-projector.glb',
-  '/assets/models/hologram-globe.glb',
-  '/assets/models/gem-rock.glb',
-  '/assets/models/boombox.glb',
-  '/assets/models/chess-set.glb',
-  '/assets/models/damaged-helmet.glb',
-  '/assets/models/barn-lamp.glb',
+  modelUrl('alien-blobby.glb'),
+  modelUrl('desk-lamp.glb'),
+  modelUrl('retro-screens.glb'),
+  modelUrl('server-rack.glb'),
+  modelUrl('data-center-rack.glb'),
+  modelUrl('neon-bar-sign.glb'),
+  modelUrl('hologram-projector.glb'),
+  modelUrl('hologram-globe.glb'),
+  modelUrl('gem-rock.glb'),
+  modelUrl('boombox.glb'),
+  modelUrl('chess-set.glb'),
+  modelUrl('damaged-helmet.glb'),
+  modelUrl('barn-lamp.glb'),
 ]
 
 const otherModels = [
-  '/assets/models/doctor-alien.glb',
-  '/assets/models/scifi-corridor.glb',
-  '/assets/models/retro-tv.glb',
-  '/assets/models/neon-sign-japanese.glb',
-  '/assets/models/arcade-cabinet.glb',
-  '/assets/models/cyberpunk-apartment.glb',
-  '/assets/models/cyberpunk-floor.glb',
-  '/assets/models/cartoon-race-car.glb',
-  '/assets/models/lava-planet.glb',
-  '/assets/models/avocado.glb',
-  '/assets/models/car-concept.glb',
-  '/assets/models/brain-stem.glb',
-  '/assets/models/dragon.glb',
-  '/assets/models/cesium-man.glb',
-  '/assets/models/corset.glb',
+  modelUrl('doctor-alien.glb'),
+  modelUrl('scifi-corridor.glb'),
+  modelUrl('retro-tv.glb'),
+  modelUrl('neon-sign-japanese.glb'),
+  modelUrl('arcade-cabinet.glb'),
+  modelUrl('cyberpunk-apartment.glb'),
+  modelUrl('cyberpunk-floor.glb'),
+  modelUrl('cartoon-race-car.glb'),
+  modelUrl('lava-planet.glb'),
+  modelUrl('avocado.glb'),
+  modelUrl('car-concept.glb'),
+  modelUrl('brain-stem.glb'),
+  modelUrl('dragon.glb'),
+  modelUrl('cesium-man.glb'),
+  modelUrl('corset.glb'),
 ]
 
 for (const path of deskModels) {
@@ -56,6 +59,8 @@ if (typeof requestIdleCallback !== 'undefined') {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AppErrorBoundary>
+      <App />
+    </AppErrorBoundary>
   </StrictMode>,
 )
