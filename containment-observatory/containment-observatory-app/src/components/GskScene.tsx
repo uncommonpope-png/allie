@@ -1,10 +1,10 @@
 import { useRef, useMemo, Suspense, useEffect } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Float, Stars } from '@react-three/drei'
+import { Stars } from '@react-three/drei'
 import { EffectComposer, Bloom, ChromaticAberration, Noise, Scanline, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { GskCharacter } from './GskCharacter'
-import { RetroLaptop, RetroTV, PinkCadillac, AlienDesk, AlienSofa } from './Props'
+import { AlienDesk, AlienSofa } from './Props'
 import { Environment } from './gsk/Environment'
 import { HologramSystem } from './gsk/Holograms'
 import { SceneLighting } from './gsk/Lighting'
@@ -12,6 +12,14 @@ import { scenePresets } from './gsk/ScenePresets'
 import { useMoodStore } from '../stores/mood-store'
 import { useGskStore } from '../stores/gsk-store'
 import type { GskStatus } from '../types/gsk'
+import {
+  AlienBlobby, DoctorAlien, ScifiCorridor, ServerRack,
+  RetroScreens, RetroTvModel, DeskLamp, DataCenterRack,
+  NeonBarSign, NeonSignJapanese, HologramGlobe, HologramProjector,
+  GemRock, ArcadeCabinet, CyberpunkApartment, CyberpunkFloor,
+  CartoonRaceCar, LavaPlanet, DamagedHelmet, Boombox, Avocado,
+  CarConcept, BrainStem, Dragon, CesiumMan, ChessSet, Corset, BarnLamp,
+} from './gsk/SceneAssets'
 
 type BridgeMood = 'idle' | 'typing' | 'watching' | 'sleeping'
 type BridgeStatus = Partial<GskStatus> & Record<string, unknown>
@@ -107,57 +115,92 @@ function MemoizedFloatingParticles() {
   )
 }
 
+const assetComponentMap: Record<string, React.ComponentType<{ position?: [number, number, number]; rotation?: [number, number, number]; scale?: number }>> = {
+  AlienBlobby,
+  DoctorAlien,
+  ScifiCorridor,
+  ServerRack,
+  RetroScreens,
+  RetroTvModel,
+  DeskLamp,
+  DataCenterRack,
+  NeonBarSign,
+  NeonSignJapanese,
+  HologramGlobe,
+  HologramProjector,
+  GemRock,
+  ArcadeCabinet,
+  CyberpunkApartment,
+  CyberpunkFloor,
+  CartoonRaceCar,
+  LavaPlanet,
+  DamagedHelmet,
+  Boombox,
+  Avocado,
+  CarConcept,
+  BrainStem,
+  Dragon,
+  CesiumMan,
+  ChessSet,
+  Corset,
+  BarnLamp,
+}
+
+function SceneAssets({ placements }: { placements: readonly { component: string; position: [number, number, number]; rotation?: [number, number, number]; scale?: number }[] }) {
+  return (
+    <>
+      {placements.map((p, i) => {
+        const Comp = assetComponentMap[p.component]
+        if (!Comp) return null
+        return <Comp key={`${p.component}-${i}`} position={p.position} rotation={p.rotation} scale={p.scale} />
+      })}
+    </>
+  )
+}
+
 function DeskScene() {
   const mood = useMoodStore((s) => s.mood)
+  const preset = scenePresets.desk
   return (
     <>
       <GskCharacter mood={mood} clothing="suit" position={[0, -0.5, 0]} scale={1.2} />
       <AlienDesk position={[0, -0.5, 0.8]} />
-      <RetroLaptop position={[0, 0, 1.0]} />
-      <RetroTV position={[-2, -0.5, -1]} />
+      <SceneAssets placements={preset.assets} />
     </>
   )
 }
 
 function OutsideScene() {
   const mood = useMoodStore((s) => s.mood)
+  const preset = scenePresets.outside
   return (
     <>
       <GskCharacter mood={mood} clothing="casual" position={[0, -0.5, 0]} scale={1.2} />
       <Stars radius={50} depth={50} count={2000} factor={4} saturation={0} fade speed={1} />
-      <Float speed={0.5} floatIntensity={0.3}>
-        <mesh position={[-2, 1, -3]}>
-          <dodecahedronGeometry args={[0.3, 0]} />
-          <meshStandardMaterial color="#00ff88" emissive="#00ff88" emissiveIntensity={0.6} transparent opacity={0.7} />
-        </mesh>
-      </Float>
-      <Float speed={0.8} floatIntensity={0.2}>
-        <mesh position={[2, 2, -2]}>
-          <octahedronGeometry args={[0.2, 0]} />
-          <meshStandardMaterial color="#a78bfa" emissive="#a78bfa" emissiveIntensity={0.5} transparent opacity={0.6} />
-        </mesh>
-      </Float>
+      <SceneAssets placements={preset.assets} />
     </>
   )
 }
 
 function CarScene() {
   const mood = useMoodStore((s) => s.mood)
+  const preset = scenePresets.car
   return (
     <>
       <GskCharacter mood={mood} clothing="suit" position={[0.2, 0.2, 0]} scale={0.8} />
-      <PinkCadillac position={[0, -0.3, 0]} />
+      <SceneAssets placements={preset.assets} />
     </>
   )
 }
 
 function SofaScene() {
   const mood = useMoodStore((s) => s.mood)
+  const preset = scenePresets.sofa
   return (
     <>
       <GskCharacter mood={mood} clothing="casual" position={[0, -0.2, 0.3]} scale={1} />
       <AlienSofa position={[0, -0.5, 0]} />
-      <RetroTV position={[0, 0, -2]} />
+      <SceneAssets placements={preset.assets} />
     </>
   )
 }
@@ -179,7 +222,6 @@ function PostProcessingEffects({ scene }: { scene: string }) {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime()
 
-    // Chromatic aberration: subtle radial pulse
     const caPulse = 0.0008 + Math.sin(t * 0.7) * 0.0004
     const angle = t * 0.3
     caRef.current.set(
@@ -188,7 +230,6 @@ function PostProcessingEffects({ scene }: { scene: string }) {
     )
   })
 
-  // Scene-aware adjustments
   const vignetteOffset = scene === 'desk' ? 0.35 : scene === 'car' ? 0.2 : 0.28
   const vignetteDarkness = scene === 'desk' ? 0.75 : scene === 'car' ? 0.55 : 0.65
   const noiseOpacity = scene === 'car' ? 0.04 : 0.08
